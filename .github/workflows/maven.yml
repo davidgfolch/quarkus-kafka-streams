@@ -31,8 +31,9 @@ jobs:
       run: mvn --batch-mode --update-snapshots verify
 
     # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
-    - name: Update dependency graph
+    - name: Copy jar to staging
       run: mkdir staging && cp target/*.jar staging
+    - name: Update dependency graph
       uses: actions/upload-artifact@v3
       with:
         name: Package
