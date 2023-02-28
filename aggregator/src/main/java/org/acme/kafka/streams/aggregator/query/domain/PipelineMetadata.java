@@ -1,4 +1,4 @@
-package org.acme.kafka.streams.aggregator.streams;
+package org.acme.kafka.streams.aggregator.query.domain;
 
 import java.util.Set;
 

@@ -1,6 +1,7 @@
-package org.acme.kafka.streams.aggregator.model;
+package org.acme.kafka.streams.aggregator.query.domain;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
+import org.acme.kafka.streams.aggregator.model.WeatherStationTemperature;
 
 @RegisterForReflection
 public class WeatherStationData {
@@ -21,7 +22,7 @@ public class WeatherStationData {
         this.avg = avg;
     }
 
-    public WeatherStationData(Aggregation ag) {
+    public WeatherStationData(WeatherStationTemperature ag) {
         this(ag.stationId, ag.stationName, ag.min, ag.max, ag.count, ag.avg);
     }
 }

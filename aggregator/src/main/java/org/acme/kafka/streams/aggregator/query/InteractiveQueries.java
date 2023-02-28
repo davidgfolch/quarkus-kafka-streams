@@ -1,7 +1,9 @@
-package org.acme.kafka.streams.aggregator.streams;
+package org.acme.kafka.streams.aggregator.query;
 
-import org.acme.kafka.streams.aggregator.model.Aggregation;
-import org.acme.kafka.streams.aggregator.model.WeatherStationData;
+import org.acme.kafka.streams.aggregator.model.WeatherStationTemperature;
+import org.acme.kafka.streams.aggregator.query.domain.WeatherStationData;
+import org.acme.kafka.streams.aggregator.query.domain.GetWeatherStationDataResult;
+import org.acme.kafka.streams.aggregator.query.domain.PipelineMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
@@ -32,8 +34,7 @@ public class InteractiveQueries {
 
     public List<PipelineMetadata> getMetaData() {
         return streams.streamsMetadataForStore(STORE_WEATHER_STATIONS).stream().map(sm ->
-                new PipelineMetadata(
-                        sm.hostInfo().host() + ":" + sm.hostInfo().port(),
+                new PipelineMetadata(sm.hostInfo().host() + ":" + sm.hostInfo().port(),
                         sm.topicPartitions().stream().map(TopicPartition::toString).collect(toSet()))
         ).collect(toList());
     }
@@ -55,7 +56,7 @@ public class InteractiveQueries {
         return GetWeatherStationDataResult.foundRemotely(activeHost.host(), activeHost.port());
     }
 
-    private ReadOnlyKeyValueStore<Integer, Aggregation> getWeatherStationStore() {
+    private ReadOnlyKeyValueStore<Integer, WeatherStationTemperature> getWeatherStationStore() {
         while (true) {
             try {
                 return streams.store(StoreQueryParameters.fromNameAndType(STORE_WEATHER_STATIONS, QueryableStoreTypes.keyValueStore()));

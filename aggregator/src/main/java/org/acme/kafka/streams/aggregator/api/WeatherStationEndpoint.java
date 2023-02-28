@@ -1,8 +1,8 @@
-package org.acme.kafka.streams.aggregator.rest;
+package org.acme.kafka.streams.aggregator.api;
 
-import org.acme.kafka.streams.aggregator.streams.GetWeatherStationDataResult;
-import org.acme.kafka.streams.aggregator.streams.InteractiveQueries;
-import org.acme.kafka.streams.aggregator.streams.PipelineMetadata;
+import org.acme.kafka.streams.aggregator.query.domain.GetWeatherStationDataResult;
+import org.acme.kafka.streams.aggregator.query.InteractiveQueries;
+import org.acme.kafka.streams.aggregator.query.domain.PipelineMetadata;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import javax.enterprise.context.ApplicationScoped;

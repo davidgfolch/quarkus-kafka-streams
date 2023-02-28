@@ -3,7 +3,7 @@ package org.acme.kafka.streams.aggregator.streams;
 import io.quarkus.kafka.client.serialization.ObjectMapperDeserializer;
 import io.quarkus.kafka.client.serialization.ObjectMapperSerializer;
 import io.quarkus.test.junit.QuarkusTest;
-import org.acme.kafka.streams.aggregator.model.Aggregation;
+import org.acme.kafka.streams.aggregator.model.WeatherStationTemperature;
 import org.acme.kafka.streams.aggregator.model.Temperature;
 import org.acme.kafka.streams.aggregator.model.WeatherStation;
 import org.apache.kafka.common.serialization.IntegerDeserializer;
@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.Properties;
 
 import static org.acme.kafka.streams.aggregator.Constants.STORE_WEATHER_STATIONS;
-import static org.acme.kafka.streams.aggregator.model.Aggregation.TOPIC;
+import static org.acme.kafka.streams.aggregator.model.WeatherStationTemperature.TOPIC;
 import static org.acme.kafka.streams.aggregator.streams.Constants.STATION;
 import static org.acme.kafka.streams.aggregator.streams.TestHelper.buildProperties;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,14 +40,14 @@ public class TopologyProducerTest {
     TopologyTestDriver testDriver;
     TestInputTopic<Integer, String> temperatures;
     TestInputTopic<Integer, WeatherStation> weatherStations;
-    TestOutputTopic<Integer, Aggregation> temperaturesAggregated;
+    TestOutputTopic<Integer, WeatherStationTemperature> temperaturesAggregated;
 
     @BeforeEach
     public void setUp() {
         testDriver = new TopologyTestDriver(topology, config);
         temperatures = testDriver.createInputTopic(Temperature.TOPIC, new IntegerSerializer(), new StringSerializer());
         weatherStations = testDriver.createInputTopic(WeatherStation.TOPIC, new IntegerSerializer(), new ObjectMapperSerializer<>());
-        temperaturesAggregated = testDriver.createOutputTopic(TOPIC, new IntegerDeserializer(), new ObjectMapperDeserializer<>(Aggregation.class));
+        temperaturesAggregated = testDriver.createOutputTopic(TOPIC, new IntegerDeserializer(), new ObjectMapperDeserializer<>(WeatherStationTemperature.class));
         testDriver.getTimestampedKeyValueStore(STORE_WEATHER_STATIONS).flush();
     }
 
@@ -63,7 +63,7 @@ public class TopologyProducerTest {
         createTemperature("15");
         createTemperature("25");
         temperaturesAggregated.readRecord();
-        Aggregation result = temperaturesAggregated.readRecord().getValue();
+        WeatherStationTemperature result = temperaturesAggregated.readRecord().getValue();
         assertEquals(2, result.count);
         assertEquals(1, result.stationId);
         assertEquals("Station 1", result.stationName);

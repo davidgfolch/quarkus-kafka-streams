@@ -3,7 +3,7 @@ Quarkus Kafka Streams
 
 This project illustrates how you can build [Apache Kafka Streams](https://kafka.apache.org/documentation/streams) applications using Quarkus.
 
-Is based on Quarkus Kafka Streams quickstart
+Is based on [Quarkus Kafka Streams quickstart](https://github.com/quarkusio/quarkus-quickstarts/tree/main/kafka-streams-quickstart) but refactors applied on my version.
 
 ## Anatomy
 

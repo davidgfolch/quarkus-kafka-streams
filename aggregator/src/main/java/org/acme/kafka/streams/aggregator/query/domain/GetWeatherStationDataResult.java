@@ -1,9 +1,7 @@
-package org.acme.kafka.streams.aggregator.streams;
+package org.acme.kafka.streams.aggregator.query.domain;
 
 import java.util.Optional;
 import java.util.OptionalInt;
-
-import org.acme.kafka.streams.aggregator.model.WeatherStationData;
 
 import static java.util.Optional.ofNullable;
 

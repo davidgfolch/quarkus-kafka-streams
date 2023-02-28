@@ -15,14 +15,14 @@ import java.math.RoundingMode;
 import static org.acme.kafka.streams.aggregator.Constants.STORE_WEATHER_STATIONS;
 
 @RegisterForReflection
-public class Aggregation {
+public class WeatherStationTemperature {
 
     public static final String TOPIC = "temperatures-aggregated";
-    public static final ObjectMapperSerde<Aggregation> SERDE = new ObjectMapperSerde<>(Aggregation.class);
-    public static final Materialized<Integer, Aggregation, KeyValueStore<Bytes, byte[]>> MATERIALIZED = Materialized.<Integer, Aggregation>as(
-            Stores.persistentKeyValueStore(STORE_WEATHER_STATIONS)
-    ).withKeySerde(Serdes.Integer()).withValueSerde(SERDE);
-    public static final Produced<Integer, Aggregation> PRODUCED = Produced.with(Serdes.Integer(), SERDE);
+    public static final ObjectMapperSerde<WeatherStationTemperature> SERDE = new ObjectMapperSerde<>(WeatherStationTemperature.class);
+    public static final Materialized<Integer, WeatherStationTemperature, KeyValueStore<Bytes, byte[]>> MATERIALIZED =
+            Materialized.<Integer, WeatherStationTemperature>as(Stores.persistentKeyValueStore(STORE_WEATHER_STATIONS))
+                    .withKeySerde(Serdes.Integer()).withValueSerde(SERDE);
+    public static final Produced<Integer, WeatherStationTemperature> PRODUCED = Produced.with(Serdes.Integer(), SERDE);
 
     public int stationId;
     public String stationName;
@@ -32,7 +32,7 @@ public class Aggregation {
     public double sum;
     public double avg;
 
-    public Aggregation updateFrom(Temperature t) {
+    public WeatherStationTemperature updateFrom(Temperature t) {
         stationId = t.stationId;
         stationName = t.stationName;
         count++;

@@ -2,7 +2,7 @@ package org.acme.kafka.streams.aggregator.streams;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
-import org.acme.kafka.streams.aggregator.model.Aggregation;
+import org.acme.kafka.streams.aggregator.model.WeatherStationTemperature;
 import org.acme.kafka.streams.aggregator.model.Temperature;
 import org.acme.kafka.streams.aggregator.model.WeatherStation;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 
 import static java.time.Instant.now;
-import static org.acme.kafka.streams.aggregator.model.Temperature.SEP;
 import static org.acme.kafka.streams.aggregator.streams.TestHelper.*;
 import static org.apache.kafka.clients.CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,7 +40,7 @@ public class AggregatorTest {
 
     KafkaProducer<Integer, String> temperatureP;
     KafkaProducer<Integer, WeatherStation> stationP;
-    KafkaConsumer<Integer, Aggregation> aggC;
+    KafkaConsumer<Integer, WeatherStationTemperature> aggC;
 
     @BeforeEach
     public void setUp() {
@@ -49,7 +48,7 @@ public class AggregatorTest {
         temperatureP = newProducerIntString(prodCfg);
         stationP = newProducerIntOm(prodCfg);
         CONSUMER_CFG.put(BOOTSTRAP_SERVERS_CONFIG, KafkaResource.getBootstrapServers());
-        aggC = newConsumerIntOm(CONSUMER_CFG, Aggregation.class);
+        aggC = newConsumerIntOm(CONSUMER_CFG, WeatherStationTemperature.class);
     }
 
     @AfterEach
@@ -62,11 +61,11 @@ public class AggregatorTest {
     @Test
     @Timeout(value = 30)
     public void test() {
-        aggC.subscribe(List.of(Aggregation.TOPIC));
+        aggC.subscribe(List.of(WeatherStationTemperature.TOPIC));
         stationP.send(new ProducerRecord<>(WeatherStation.TOPIC, 1, WEATHER_STATION));
         sendTemperature("15");
         sendTemperature("25");
-        Aggregation r = poll(aggC, 1).get(0).value();
+        WeatherStationTemperature r = poll(aggC, 1).get(0).value();
         assertEquals(0, r.count % 2); //should be 2, but repeated local test run accumulates +2
         assertEquals(WEATHER_STATION.id, r.stationId);
         assertEquals(WEATHER_STATION.name, r.stationName);
