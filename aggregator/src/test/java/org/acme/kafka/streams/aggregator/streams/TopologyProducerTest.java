@@ -21,6 +21,7 @@ import java.util.Properties;
 
 import static org.acme.kafka.streams.aggregator.Constants.STORE_WEATHER_STATIONS;
 import static org.acme.kafka.streams.aggregator.model.Aggregation.TOPIC;
+import static org.acme.kafka.streams.aggregator.streams.Constants.STATION;
 import static org.acme.kafka.streams.aggregator.streams.TestHelper.buildProperties;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -29,6 +30,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  */
 @QuarkusTest
 public class TopologyProducerTest {
+
+    private final Properties config = buildProperties(Map.of(
+            StreamsConfig.APPLICATION_ID_CONFIG, "testApplicationId",
+            StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "dummy:1234"));
 
     @Inject
     Topology topology;
@@ -39,9 +44,6 @@ public class TopologyProducerTest {
 
     @BeforeEach
     public void setUp() {
-        Properties config = buildProperties(Map.of(
-                StreamsConfig.APPLICATION_ID_CONFIG, "testApplicationId",
-                StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "dummy:1234"));
         testDriver = new TopologyTestDriver(topology, config);
         temperatures = testDriver.createInputTopic(Temperature.TOPIC, new IntegerSerializer(), new StringSerializer());
         weatherStations = testDriver.createInputTopic(WeatherStation.TOPIC, new IntegerSerializer(), new ObjectMapperSerializer<>());
@@ -57,15 +59,18 @@ public class TopologyProducerTest {
 
     @Test
     public void test() {
-        WeatherStation station1 = new WeatherStation(1, "Station 1");
-        weatherStations.pipeInput(station1.id, station1);
-        temperatures.pipeInput(station1.id, Instant.now() + ";" + "15");
-        temperatures.pipeInput(station1.id, Instant.now() + ";" + "25");
+        weatherStations.pipeInput(STATION.id, STATION);
+        createTemperature("15");
+        createTemperature("25");
         temperaturesAggregated.readRecord();
         Aggregation result = temperaturesAggregated.readRecord().getValue();
         assertEquals(2, result.count);
         assertEquals(1, result.stationId);
         assertEquals("Station 1", result.stationName);
         assertEquals(20, result.avg);
+    }
+
+    private void createTemperature(String temperature) {
+        temperatures.pipeInput(STATION.id, Instant.now() + Temperature.SEP + temperature);
     }
 }

@@ -1,7 +1,5 @@
 package org.acme.kafka.streams.aggregator.streams;
 
-import io.quarkus.kafka.client.serialization.ObjectMapperDeserializer;
-import io.quarkus.kafka.client.serialization.ObjectMapperSerializer;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import org.acme.kafka.streams.aggregator.model.Aggregation;
@@ -11,22 +9,18 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.serialization.IntegerDeserializer;
-import org.apache.kafka.common.serialization.IntegerSerializer;
-import org.apache.kafka.common.serialization.StringSerializer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
-import java.io.File;
-import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
-import static org.acme.kafka.streams.aggregator.streams.TestHelper.buildProperties;
-import static org.acme.kafka.streams.aggregator.streams.TestHelper.poll;
+import static java.time.Instant.now;
+import static org.acme.kafka.streams.aggregator.model.Temperature.SEP;
+import static org.acme.kafka.streams.aggregator.streams.TestHelper.*;
 import static org.apache.kafka.clients.CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -37,44 +31,50 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @QuarkusTestResource(KafkaResource.class)
 public class AggregatorTest {
 
-    KafkaProducer<Integer, String> temperatureProducer;
-    KafkaProducer<Integer, WeatherStation> stationsProducer;
-    KafkaConsumer<Integer, Aggregation> aggConsumer;
+    private static final Map<String, String> CONSUMER_CFG = new HashMap<>(Map.of(
+            BOOTSTRAP_SERVERS_CONFIG, "KafkaResource.getBootstrapServers() DONT WORK STATICALLY",
+            ConsumerConfig.GROUP_ID_CONFIG, "test-group-id",
+            ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "true",
+            ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest"));
+    private static final WeatherStation WEATHER_STATION = new WeatherStation(1, "Station 1");
+
+
+    KafkaProducer<Integer, String> temperatureP;
+    KafkaProducer<Integer, WeatherStation> stationP;
+    KafkaConsumer<Integer, Aggregation> aggC;
 
     @BeforeEach
     public void setUp() {
-        Properties producerCfg = buildProperties(Map.of(BOOTSTRAP_SERVERS_CONFIG, KafkaResource.getBootstrapServers()));
-        temperatureProducer = new KafkaProducer<>(producerCfg, new IntegerSerializer(), new StringSerializer());
-        stationsProducer = new KafkaProducer<>(producerCfg, new IntegerSerializer(), new ObjectMapperSerializer<>());
-        final Properties consumerCfg = buildProperties(Map.of(
-                BOOTSTRAP_SERVERS_CONFIG, KafkaResource.getBootstrapServers(),
-                ConsumerConfig.GROUP_ID_CONFIG, "test-group-id",
-                ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "true",
-                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest"));
-        new File("/tmp/kafka-streams/temperature-aggregator").delete(); //native exec
-        new File("target/data/kafka-data/stores/temperature-aggregator").delete(); //non native exec
-        aggConsumer = new KafkaConsumer<>(consumerCfg, new IntegerDeserializer(), new ObjectMapperDeserializer<>(Aggregation.class));
+        final var prodCfg = Map.of(BOOTSTRAP_SERVERS_CONFIG, KafkaResource.getBootstrapServers());
+        temperatureP = newProducerIntString(prodCfg);
+        stationP = newProducerIntOm(prodCfg);
+        CONSUMER_CFG.put(BOOTSTRAP_SERVERS_CONFIG, KafkaResource.getBootstrapServers());
+        aggC = newConsumerIntOm(CONSUMER_CFG, Aggregation.class);
     }
 
     @AfterEach
     public void tearDown() {
-        temperatureProducer.close();
-        stationsProducer.close();
-        aggConsumer.close();
+        temperatureP.close();
+        stationP.close();
+        aggC.close();
     }
 
     @Test
     @Timeout(value = 30)
     public void test() {
-        aggConsumer.subscribe(List.of(Aggregation.TOPIC));
-        stationsProducer.send(new ProducerRecord<>(WeatherStation.TOPIC, 1, new WeatherStation(1, "Station 1")));
-        temperatureProducer.send(new ProducerRecord<>(Temperature.TOPIC, 1, Instant.now() + ";" + "15"));
-        temperatureProducer.send(new ProducerRecord<>(Temperature.TOPIC, 1, Instant.now() + ";" + "25"));
-        Aggregation results = poll(aggConsumer, 1).get(0).value();
-        assertEquals(2, results.count); // When the state store was initially empty is 2 and so on (+2)
-        assertEquals(1, results.stationId);
-        assertEquals("Station 1", results.stationName);
-        assertEquals(20, results.avg);
+        aggC.subscribe(List.of(Aggregation.TOPIC));
+        stationP.send(new ProducerRecord<>(WeatherStation.TOPIC, 1, WEATHER_STATION));
+        sendTemperature("15");
+        sendTemperature("25");
+        Aggregation r = poll(aggC, 1).get(0).value();
+        assertEquals(0, r.count % 2); //should be 2, but repeated local test run accumulates +2
+        assertEquals(WEATHER_STATION.id, r.stationId);
+        assertEquals(WEATHER_STATION.name, r.stationName);
+        assertEquals(20, r.avg);
+    }
+
+    private void sendTemperature(String temperature) {
+        temperatureP.send(new ProducerRecord<>(Temperature.TOPIC, 1, now() + Temperature.SEP + temperature));
     }
 
 }

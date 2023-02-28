@@ -1,12 +1,15 @@
 package org.acme.kafka.streams.aggregator.streams;
 
-import org.acme.kafka.streams.aggregator.Constants;
-import org.acme.kafka.streams.aggregator.model.Aggregation;
+import io.quarkus.kafka.client.serialization.ObjectMapperDeserializer;
+import io.quarkus.kafka.client.serialization.ObjectMapperSerializer;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.streams.KafkaStreams;
-import org.apache.kafka.streams.StreamsBuilder;
-import org.apache.kafka.streams.StreamsConfig;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.common.serialization.IntegerDeserializer;
+import org.apache.kafka.common.serialization.IntegerSerializer;
+import org.apache.kafka.common.serialization.StringSerializer;
+import org.jetbrains.annotations.NotNull;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -24,6 +27,21 @@ public class TestHelper {
         Properties props = new Properties();
         props.putAll(properties);
         return props;
+    }
+
+    @NotNull
+    public static <T> KafkaConsumer<Integer, T> newConsumerIntOm(Map<String, String> consumerCfg, Class<T> clazz) {
+        return new KafkaConsumer<>(buildProperties(consumerCfg), new IntegerDeserializer(), new ObjectMapperDeserializer<>(clazz));
+    }
+
+    @NotNull
+    public static <T> KafkaProducer<Integer, T> newProducerIntOm(Map<String, String> prodCfg) {
+        return new KafkaProducer<>(buildProperties(prodCfg), new IntegerSerializer(), new ObjectMapperSerializer<>());
+    }
+
+    @NotNull
+    public static KafkaProducer<Integer, String> newProducerIntString(Map<String, String> prodCfg) {
+        return new KafkaProducer<>(buildProperties(prodCfg), new IntegerSerializer(), new StringSerializer());
     }
 
     public static <T> List<ConsumerRecord<Integer, T>> poll(Consumer<Integer, T> consumer, int expectedRecordCount) {
