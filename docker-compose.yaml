@@ -35,6 +35,8 @@ services:
       - kafkastreams-network
 
   producer:
+    depends_on:
+      - kafka
     image: quarkus-kafka-stream/kafka-streams-producer:1.0
     build:
       context: producer
@@ -45,6 +47,8 @@ services:
       - kafkastreams-network
 
   aggregator:
+    depends_on:
+      - kafka
     image: quarkus-kafka-streams/kafka-streams-aggregator:1.0
     build:
       context: aggregator
