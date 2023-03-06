@@ -2,8 +2,6 @@ package org.acme.kafka.streams.producer.generator;
 
 import io.smallrye.mutiny.Multi;
 import io.smallrye.reactive.messaging.kafka.Record;
-import org.acme.kafka.streams.aggregator.model.Temperature;
-import org.acme.kafka.streams.aggregator.model.WeatherStation;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
 import org.jboss.logging.Logger;
 
@@ -29,38 +27,47 @@ public class ValuesGenerator {
 
     private final Random random = new Random();
     private final List<WeatherStationTemperature> stations = List.of(
-            new WeatherStationTemperature(1, "Hamburg", 13),
-            new WeatherStationTemperature(2, "Snowdonia", 5),
-            new WeatherStationTemperature(3, "Boston", 11),
-            new WeatherStationTemperature(4, "Tokio", 16),
-            new WeatherStationTemperature(5, "Cusco", 12),
-            new WeatherStationTemperature(6, "Svalbard", -7),
+            new WeatherStationTemperature(1, "Hamburg    ", 13),
+            new WeatherStationTemperature(2, "Snowdonia  ", 5),
+            new WeatherStationTemperature(3, "Boston     ", 11),
+            new WeatherStationTemperature(4, "Tokio      ", 16),
+            new WeatherStationTemperature(5, "Cusco      ", 12),
+            new WeatherStationTemperature(6, "Svalbard   ", -7),
             new WeatherStationTemperature(7, "Porthsmouth", 11),
-            new WeatherStationTemperature(8, "Oslo", 7),
-            new WeatherStationTemperature(9, "Marrakesh", 20));
+            new WeatherStationTemperature(8, "Oslo       ", 7),
+            new WeatherStationTemperature(9, "Marrakesh  ", 20));
 
-    @Outgoing(Temperature.TOPIC)
+    @Outgoing("temperature-values") //Temperature.TOPIC
     public Multi<Record<Integer, String>> generate() {
-        return Multi.createFrom().ticks().every(ofMillis(500)).onOverflow().drop().map(tick -> {
-            WeatherStationTemperature station = stations.get(random.nextInt(stations.size()));
-            double temperature = BigDecimal.valueOf(random.nextGaussian() * 15 + station.max)
-                    .setScale(1, HALF_UP).doubleValue();
-            LOG.infov("station: {0}, temperature: {1}", station.stationName, temperature);
-            return Record.of(station.stationId, Instant.now() + ";" + temperature);
-        });
+        return Multi.createFrom().ticks().every(ofMillis(500)).onOverflow().drop()
+                .map(tick -> stations.get(random.nextInt(stations.size())))
+                .map(station -> {
+                    double temperature = generateTemperature(station);
+                    final var record = Record.of(station.stationId, Instant.now() + ";" + temperature);
+                    LOG.infov(record.key()+"\t"+station.stationName+"\t"+record.value());
+                    return record;
+                });
     }
 
-    @Outgoing(WeatherStation.TOPIC)
+    private double generateTemperature(WeatherStationTemperature station) {
+        return BigDecimal.valueOf(random.nextGaussian() * 15 + station.temperature).setScale(1, HALF_UP).doubleValue();
+    }
+
+    @Outgoing("weather-stations") //WeatherStation.TOPIC
     public Multi<Record<Integer, String>> weatherStations() {
         return Multi.createFrom().items(
                 stations.stream().map(s -> Record.of(s.stationId, "{ \"id\" : " + s.stationId + ", \"name\" : \"" + s.stationName + "\" }")));
     }
 
-    private static class WeatherStationTemperature extends org.acme.kafka.streams.aggregator.model.WeatherStationTemperature {
+    private static class WeatherStationTemperature {
+        private final int stationId;
+        private final String stationName;
+        private final int temperature;
+
         public WeatherStationTemperature(int stationId, String stationName, int temperature) {
             this.stationId = stationId;
             this.stationName = stationName;
-            this.max = temperature;
+            this.temperature = temperature;
         }
     }
 }
