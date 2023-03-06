@@ -6,6 +6,10 @@
   <artifactId>quarkus-kafka-streams</artifactId>
   <version>1.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
+  <properties>
+    <sonar.organization>jlasdkdlja89d8falskdkukivenpaka3787</sonar.organization>
+    <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+  </properties>
   <modules>
     <module>producer</module>
     <module>aggregator</module>
