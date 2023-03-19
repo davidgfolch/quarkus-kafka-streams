@@ -2,6 +2,7 @@ package org.acme.kafka.streams.producer.generator;
 
 import io.smallrye.mutiny.Multi;
 import io.smallrye.reactive.messaging.kafka.Record;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
 import org.jboss.logging.Logger;
 
@@ -37,14 +38,35 @@ public class ValuesGenerator {
             new WeatherStationTemperature(8, "Oslo       ", 7),
             new WeatherStationTemperature(9, "Marrakesh  ", 20));
 
+    @ConfigProperty(name = "generator.temperature.tick")
+    long temperatureTick;
+//    @ConfigProperty(name = "generator.temperature.tick2")
+//    long temperatureTick2;
+//    @ConfigProperty(name = "generator.temperature.tick3")
+//    long temperatureTick3;
+
     @Outgoing("temperature-values") //Temperature.TOPIC
     public Multi<Record<Integer, String>> generate() {
-        return Multi.createFrom().ticks().every(ofMillis(500)).onOverflow().drop()
-                .map(tick -> stations.get(random.nextInt(stations.size())))
+        return generate(temperatureTick);
+    }
+
+//    @Outgoing("temperature-values") //Temperature.TOPIC
+//    public Multi<Record<Integer, String>> generate2() {
+//        return generate(temperatureTick2);
+//    }
+//
+//    @Outgoing("temperature-values") //Temperature.TOPIC
+//    public Multi<Record<Integer, String>> generate3() {
+//        return generate(temperatureTick3);
+//    }
+
+    private Multi<Record<Integer, String>> generate(Long tick) {
+        return Multi.createFrom().ticks().every(ofMillis(tick)).onOverflow().drop()
+                .map(toc -> stations.get(random.nextInt(stations.size())))
                 .map(station -> {
                     double temperature = generateTemperature(station);
                     final var record = Record.of(station.stationId, Instant.now() + ";" + temperature);
-                    LOG.infov(record.key()+"\t"+station.stationName+"\t"+record.value());
+                    LOG.infov(record.key() + "\t" + station.stationName + "\t" + record.value());
                     return record;
                 });
     }
